@@ -24,13 +24,13 @@ data = read.transactions("C:/Users/David/Google Drive/Github/task-2-4-basket-ana
                   format = "basket",
                   sep = ",",
                   rm.duplicates = T,
-                  encoding = "UTF-8")
+                  encoding = "unknown")
 
 dim(data) #Number of Rows and Columns
 size(data) #Number of items per transaction
-arules::LIST(data)
-inspect(data)
+#arules::LIST(data) #Diferent of "inspect". With LIST a list is actually generated
+itemLabels(data)
 
+itemFrequencyPlot(x = data, topN = 10)
 
-list(((1,2,3,4), ("Hi", "car")))
-
+image(data)
