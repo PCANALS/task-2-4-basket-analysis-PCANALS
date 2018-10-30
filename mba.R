@@ -164,13 +164,18 @@ itemLabels(data)
 
 brand.cat <- arules::aggregate(x = data, by = "brand")
 
-rules = apriori(data = brand.cat,
+rules<-apriori(data = brand.cat,
                 #appearance = list(lhs= "Others"),
                 parameter = list(support = 0.01, confidence = 0.5))
 inspect(head(sort(rules, by="confidence"),15))
 
+###ok###
 plot(rules, method = "grouped", control = list(k=10))
 plot(rules, method = "matrix", measure = c("lift","confidence"))
+
+
+###ok###
+plot(sort(x = rules, by="confidence")[1:10],method="graph")
 
 #### LABEL CATEGORIES####
 
@@ -178,71 +183,131 @@ plot(rules, method = "matrix", measure = c("lift","confidence"))
 data@itemInfo$cate = data@itemInfo$labels
 
 
-#Laptops#
+#Laptops# añadiendo las diferentes palabras clave
 
-data@itemInfo$cate[grep(pattern = "Laptop", x = data@itemInfo$cate)] <- "Laptops" 
-
-##error logical al intentar añadir mas de una palabra por patternn ("Laptop"|"MacBook")###
-
-data@itemInfo$cate[grep(pattern = "MacBook", x = data@itemInfo$cate)] <- "Laptops"
-data@itemInfo$cate[grep(pattern = "Aspire", x = data@itemInfo$cate)] <- "Laptops"
-data@itemInfo$cate[grep(pattern = "Aspire", x = data@itemInfo$cate)] <- "Laptops"
-data@itemInfo$cate[grep(pattern = "Chromebook", x = data@itemInfo$cate)] <- "Laptops"
-
-#Desktop#
-
-data@itemInfo$cate[grep(pattern = "iMac", x = data@itemInfo$cate)] <- "Desktops"
-
-#OJO NO FUNCIONA
-data@itemInfo$cate[grep(pattern = "Desktop", x = data@itemInfo$cate)] <- "Desktops"
+data@itemInfo$cate[grep(pattern = "Laptop|MacBook|Aspire|Chromebook", x = data@itemInfo$cate)] <- "Laptops" 
 
 
-data@itemInfo$cate
-#no se ha podido incluir por la palabra Desktops por estar tambien en otras categorias#
-
-#Monitors#
-
-#no se ha podido incluir por la palabra Monitors por estar tambien en otras categorias#
+#Desktop# # utilizando un vector por la palabra Desktop en diferentes categorias#
 
 
-#Computer Mice
-#Keyboard
-#Mouse and Keyboard Combo
+desks<-c("Lenovo Desktop Computer","iMac","HP Desktop","ASUS Desktop","Dell Desktop",
+         "Intel Desktop","Acer Desktop","CYBERPOWER Gamer Desktop","Dell 2 Desktop")
+
+  
+data@itemInfo$cate[grep(paste(pattern = desks, collapse="|"), x = data@itemInfo$cate)] <- "Desktops"
 
 
-#Computer Headphones#
+
+#Monitors# Todos los monitors finalizan en $
+
+data@itemInfo$cate[grep(pattern = "Monitor$", x = data@itemInfo$cate)] <- "Monitors"
+
+
+#Computer Mice# vector por la diversidad 
+
+
+mouse<- c("3-Button Mouse","Logitech Wireless Mouse","Microsoft Basic Optical Mouse",
+          "Logitech 3-button Mouse","Redragon Gaming Mouse","HP Wireless Mouse","Generic Black 3-Button",
+          "Wireless Portable Mouse","Gaming Mouse Professional","Slim Wireless Mouse")
+
+data@itemInfo$cate[grep(paste(pattern = mouse, collapse="|"), x = data@itemInfo$cate)] <- "Computer Mice"
+
+
+#Keyboard# acabado en Keyboard$
+
+data@itemInfo$cate[grep(pattern = "Keyboard$", x = data@itemInfo$cate)] <- "Keyboard"
+
+
+
+#Mouse and Keyboard Combo#
+data@itemInfo$cate[grep(pattern = "Combo", x = data@itemInfo$cate)] <- "Mouse and Keyboard Combo"
+data@itemInfo$cate[grep(pattern = "Keyboard and Mouse", x = data@itemInfo$cate)] <- "Mouse and Keyboard Combo"
+data@itemInfo$cate[grep(pattern = "Keyboard & Mouse", x = data@itemInfo$cate)] <- "Mouse and Keyboard Combo"
+
+
+
+#Computer Headphones# #mezcla de generico y especifico por no tener key words#
 
 data@itemInfo$cate[grep(pattern = "Headset", x = data@itemInfo$cate)] <- "Computer Headphones"
+data@itemInfo$cate[grep(pattern = "On-Ear", x = data@itemInfo$cate)] <- "Computer Headphones"
+data@itemInfo$cate[grep(pattern = "Ailihen", x = data@itemInfo$cate)] <-"Computer Headphones"
+data@itemInfo$cate[grep(pattern = "Koss", x = data@itemInfo$cate)] <- "Computer Headphones"
+data@itemInfo$cate[grep(pattern = "Kensington Headphones", x = data@itemInfo$cate)] <- "Computer Headphones"
 
-#no se ha podido incluir por la palabra Headphones por estar tambien en otras categorias#
 
 
+#Active Headphones# #especifico por no existir key words#
 
-#Active Headphones# 
-#interferencia con otras categorias#
+data@itemInfo$cate[grep(pattern = "Earpods", x = data@itemInfo$cate)] <- "Active Headphones"
+data@itemInfo$cate[grep(pattern = "Bluetooth Headphone", x = data@itemInfo$cate)] <- "Active Headphones"
+data@itemInfo$cate[grep(pattern = "Beats", x = data@itemInfo$cate)] <- "Active Headphones"
+data@itemInfo$cate[grep(pattern = "In-Ear", x = data@itemInfo$cate)] <- "Active Headphones"
+data@itemInfo$cate[grep(pattern = "Earhook", x = data@itemInfo$cate)] <- "Active Headphones"
 
-#Computer Cords#
+
+#Computer Cords# #key word#
+
 data@itemInfo$cate[grep(pattern = "Cable", x = data@itemInfo$cate)] <- "Computer Cords"
+data@itemInfo$cate[grep(pattern = "HDMI", x = data@itemInfo$cate)] <- "Computer Cords"
 
-#Speakers#
+
+#Accessories#
+
+data@itemInfo$cate[grep(pattern = "Mouse Pad", x = data@itemInfo$cate)] <- "Accesories"
+data@itemInfo$cate[grep(pattern = "Computer Game", x = data@itemInfo$cate)] <- "Accesories"
+data@itemInfo$cate[grep(pattern = "Home and Student", x = data@itemInfo$cate)] <- "Accesories"
+
+
+
+#Speakers# Mezcla key word y especifico#
+
 data@itemInfo$cate[grep(pattern = "Speaker", x = data@itemInfo$cate)] <- "Speakers"
 data@itemInfo$cate[grep(pattern = "Sonos", x = data@itemInfo$cate)] <- "Speakers"
+data@itemInfo$cate[grep(pattern = "Acoustics", x = data@itemInfo$cate)] <- "Speakers"
+data@itemInfo$cate[grep(pattern = "DOSS Touch Wireless Bluetooth", x = data@itemInfo$cate)] <- "Speakers"
 
-#Computer Stands#
+
+#Printers # con vector para evitar confusion con Printer Ink#
+
+printers<- c("Epson Printer","HP Wireless Printer","Canon Office Printer",
+             "Brother Printer","DYMO Label Manker")
+
+data@itemInfo$cate[grep(paste(pattern = printers, collapse="|"), x = data@itemInfo$cate)] <- "Printers"
+
+
+#Printer Ink# key words genericas#
+
+data@itemInfo$cate[grep(pattern = "Ink", x = data@itemInfo$cate)] <- "Printer Ink"
+data@itemInfo$cate[grep(pattern = "Toner", x = data@itemInfo$cate)] <- "Printer Ink"
+data@itemInfo$cate[grep(pattern = "Tape", x = data@itemInfo$cate)] <- "Printer Ink"
+
+
+#Computer Stands# key words genericas#
 
 data@itemInfo$cate[grep(pattern = "Stand", x = data@itemInfo$cate)] <- "Computer Stands"
 data@itemInfo$cate[grep(pattern = "Mount", x = data@itemInfo$cate)] <- "Computer Stands"
 
-#Computer Tablets#
+#Computer Tablets# especifico por key words dentro de otras palabras
+
+data@itemInfo$cate[grep(pattern = "iPad", x = data@itemInfo$cate)] <- "Computer Tablets"
+data@itemInfo$cate[grep(pattern = "Kindle", x = data@itemInfo$cate)] <- "Computer Tablets"
+data@itemInfo$cate[grep(pattern = "Fire HD Tablet", x = data@itemInfo$cate)] <- "Computer Tablets"
+data@itemInfo$cate[grep(pattern = "Samsung Galaxy Tab", x = data@itemInfo$cate)] <- "Computer Tablets"
 
 
-#External Hardrives#
+#External Hardrives# mix
 
 data@itemInfo$cate[grep(pattern = "External", x = data@itemInfo$cate)] <- "External Hardrives"
+data@itemInfo$cate[grep(pattern = "5TB Desktop Hard Drive", x = data@itemInfo$cate)] <- "External Hardrives"
 
-#Smart Home Devices#
+
+#Smart Home Devices# mix
 
 data@itemInfo$cate[grep(pattern = "TV", x = data@itemInfo$cate)] <- "Smart Home Devices"
+data@itemInfo$cate[grep(pattern = "Google Home", x = data@itemInfo$cate)] <- "Smart Home Devices"
+data@itemInfo$cate[grep(pattern = "Smart Light Bulb", x = data@itemInfo$cate)] <- "Smart Home Devices"
+data@itemInfo$cate[grep(pattern = "Roku Express", x = data@itemInfo$cate)] <- "Smart Home Devices"
 
 
 data@itemInfo
@@ -250,6 +315,50 @@ data@itemInfo
 
 data@itemInfo$cate <- as.factor(data@itemInfo$cate)
 str(data@itemInfo)
+
+#agregate#
+
+cate.cat <- arules::aggregate(x = data, by = "cate")
+
+rules.cat<-apriori(data = cate.cat,parameter = list(support = 0.01, confidence = 0.5))
+
+
+inspect(head(sort(rules.cat, by="confidence"),15))
+
+plot(rules.cat, method = "grouped", control = list(k=10)) # muy util para ver los main products Desktop 
+#y Laptops  y complementos basicos que son tanto directos a Laptop como a Desktop
+
+
+plot(rules.cat, method = "matrix", measure = c("lift","confidence")) #no util#
+
+plot(sort(x = rules.cat, by="confidence")[1:5],method="graph") #por mejorar plot para que sea util#
+
+
+
+#### LABEL KIND - POR TRABAJAR####
+#Dividido en 2 categorias MAIN-productos principales Desktops y labels por lo visto en el anterior paso COMPLE- productos complementarios (posible utilizacion para segmentacion de clientes)
+
+
+#pendiente de añadir alienware# o agrupar por tipo de label
+
+#main<-c("LG Touchscreen Laptop","Acer Aspire","HP Laptop","ASUS Chromebook","Apple Macbook Pro","Apple MacBook Air","Dell Laptop",
+#        "Eluktronics Pro Gaming Laptop","Alienware AW17R4-7345SLV-PUS 17" Laptop",
+#"HP Notebook Touchscreen Laptop PC"
+"Lenovo Desktop Computer"
+"iMac"
+"HP Desktop"
+"ASUS Desktop"
+"Dell Desktop"
+"Intel Desktop"
+"Acer Desktop"
+"CYBERPOWER Gamer Desktop"
+"Dell 2 Desktop"
+"iPad"
+"iPad Pro"
+"Fire HD Tablet"
+"Samsung Galaxy Tab"
+"Kindle"
+
 
 ####~~~notas~~~####
 
