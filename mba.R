@@ -16,21 +16,112 @@ library(arules)
 library(arulesViz)
 
 #### LOADING DATASET ####
-df = read.csv("C:/Users/David/Google Drive/Github/task-2-4-basket-analysis-PCANALS/transactions.csv",
+
+#david directory#
+"C:/Users/David/Google Drive/Github/task-2-4-basket-analysis-PCANALS/transactions.csv"
+
+setwd("C:/Users/pilar/Documents/Ubiqum/TASK2.4/task-2-4-basket-analysis-PCANALS")
+
+
+df = read.csv("transactions.csv",
               header = F,
               stringsAsFactors = F)
 
-data = read.transactions("C:/Users/David/Google Drive/Github/task-2-4-basket-analysis-PCANALS/transactions.csv",
+
+
+dat = read.transactions("transactions.csv",
                   format = "basket",
                   sep = ",",
                   rm.duplicates = T,
                   encoding = "UTF-8")
 
-dim(data) #Number of Rows and Columns
-size(data) #Number of items per transaction
-arules::LIST(data)
-inspect(data)
+dim(dat) #Number of Rows and Columns
+size(dat) #Number of items per transaction
+arules::LIST(dat)
+summary(dat)
+#list(data)
+
+#inspect(data)
 
 
-list(((1,2,3,4), ("Hi", "car")))
+image(dat) # demasiados datos en transacciones por lo que solo se ve una linea, hay que coger un sample#
+sample(dat)
 
+image(sample(dat, 2000)) #probado de 100 a 2000 y no se ve un patron#
+
+itemFrequencyPlot(dat, topN=10) #hay que indicarle un top o no puede plotear#
+
+####associations with APRIORI####
+apriori(dat)
+
+RulesName<- apriori(dat, parameter = list(supp = 0.01, conf = 0.5)) #probado con muchas variables y las rules siempre son 0#  
+
+RulesName2<- apriori(dat, parameter = list(supp = 0.01, conf = 0.0, minlen=2), appearance = list(lhs = "iMac"))
+
+RulesName3<- apriori(dat, parameter = list(supp = 0.01, conf = 0.1), appearance = list(rhs="Apple Earpods"))
+
+plot(RulesName3)
+
+
+#
+
+inspect(sort(RulesName2, by = "confidence"))
+#support , amount of times 2 items are together depends of the datasize
+
+#confidence  
+#lift how is related
+
+#check with ranges support and confidence
+
+
+#minlen???###
+
+inspect(RulesName)
+
+####RANDOM PATTERNS####
+patterns = random.patterns(nItems = 1000);
+
+summary(patterns)# vemos los items mas frecuentes#
+
+trans = random.transactions(nItems = 1000, nTrans = 1000, method = "agrawal",  patterns = patterns);
+
+image(trans) #plot transacctions vs items#
+
+
+
+
+data("data");
+
+bas <- as(data, "transactions");
+
+rules <- apriori(bas, parameter=list(support=0.01, confidence=0.5));
+
+rules
+sel = plot(rules, measure=c("support","lift"), shading="confidence", interactive=TRUE);
+
+subrules = rules[quality(rules)$confidence > 0.8];
+
+subrules
+plot(subrules, method="matrix", measure="lift");
+
+plot(subrules, method="matrix", measure="lift", control=list(reorder=TRUE));
+
+plot(subrules, method="matrix3D", measure="lift");
+
+plot(subrules, method="matrix3D", measure="lift", control = list(reorder=TRUE));
+
+plot(subrules, method="matrix", measure=c("lift", "confidence"));
+
+plot(subrules, method="matrix", measure=c("lift","confidence"), control = list(reorder=TRUE));
+
+plot(rules, method="grouped");
+
+plot(rules, method="grouped", control=list(k=50));
+
+sel = plot(RulesName2, method="grouped", interactive=TRUE);
+
+####~~~notas~~~####
+
+#analizar por categorias los que tienen menor volumen de ventas en Blackwell,vs Electrosu
+#rows vacias
+#
