@@ -14,7 +14,8 @@ rm(list = ls())
 #### LOADING LIBRARIES ####
 library(arules)
 library(arulesViz)
-
+library(dplyr)
+library(ggplot2)
 #### SET WORKING DIRECTORY ####
 
 #david directory#
@@ -35,6 +36,18 @@ data = read.transactions("transactions.csv",
                   rm.duplicates = T,
                   encoding = "unknown")
 
+hist((size(data))) #histo frecuencia del numero de productos por transaccion#
+
+max(size(data))
+mean
+
+dataHigh<-data[size(data)<=10& size(data)>0]
+
+hist(size(dataHigh))
+
+dataLow<-data[size(data)>10]
+hist(size(dataLow))
+
 #### LOOKING DATASET ####
 
 dim(data) #Number of Rows and Columns
@@ -46,7 +59,7 @@ itemFrequencyPlot(x = data, topN = 15) #Top ventas
 
 #### APRIORI ####
 
-rules = apriori(data = data, parameter = list(support = 0.01, confidence = 0.5))
+rules = apriori(data = data, parameter = list(support = 0.01, confidence = 0.1), appearance = list(lhs = "iMac"))
 inspect(head(sort(rules, by="lift"),5))
 
 plot(rules, method = "graph")
@@ -90,14 +103,13 @@ bas <- as(data, "transactions");
 rules <- apriori(bas, parameter=list(support=0.01, confidence=0.5));
 
 rules
-sel = plot(rules, measure=c("support","lift"), shading="confidence", interactive=TRUE);
+#sel = plot(rules, measure=c("support","lift"), shading="confidence", interactive=TRUE);
 
 subrules = rules[quality(rules)$confidence > 0.8];
 
 subrules
-plot(subrules, method="matrix", measure="lift");
 
-plot(subrules, method="matrix", measure="lift", control=list(reorder=TRUE));
+plot(subrules, method="matrix", measure="lift", control=list(reorder="confidence"));
 
 plot(subrules, method="matrix3D", measure="lift");
 
@@ -122,12 +134,12 @@ sum(is.redundant(rules))
 # inspect(ItemRules)
 #### ONLY 1 ITEM ####
 # rules with rhs containing "Survived" only
-rules.imac <- apriori(data,
-                 parameter = list(supp=0.01, conf=0.2),
-                 appearance = list(lhs= "iMac"),
-                 control = list(verbose=F))
-rules.sorted <- sort(rules.imac, by="lift")
-inspect(rules.sorted)
+#rules.imac <- apriori(data,
+#                  parameter = list(supp=0.01, conf=0.2),
+#                  appearance = list(lhs= "iMac"),
+#                  control = list(verbose=F))
+# rules.sorted <- sort(rules.imac, by="lift")
+# inspect(rules.sorted)
 
 
 
@@ -165,12 +177,16 @@ itemLabels(data)
 brand.cat <- arules::aggregate(x = data, by = "brand")
 
 rules<-apriori(data = brand.cat,
-                #appearance = list(lhs= "Others"),
-                parameter = list(support = 0.01, confidence = 0.5))
+                #appearance = list(lhs= "Apple"),
+                parameter = list(support = 0.01, confidence = 0.5, minlen =2))
 inspect(head(sort(rules, by="confidence"),15))
+
+plot(sort(rules, by="confidence")[1:10], method = "graph", engine="interactive") #### interactivo para ver lift y support#
+
 
 ###ok###
 plot(rules, method = "grouped", control = list(k=10))
+#no ok#
 plot(rules, method = "matrix", measure = c("lift","confidence"))
 
 
@@ -191,7 +207,7 @@ data@itemInfo$cate[grep(pattern = "Laptop|MacBook|Aspire|Chromebook", x = data@i
 #Desktop# # utilizando un vector por la palabra Desktop en diferentes categorias#
 
 
-desks<-c("Lenovo Desktop Computer","iMac","HP Desktop","ASUS Desktop","Dell Desktop",
+desks<-c("Lenovo Desktop Computer","HP Desktop","iMac","ASUS Desktop","Dell Desktop",
          "Intel Desktop","Acer Desktop","CYBERPOWER Gamer Desktop","Dell 2 Desktop")
 
   
@@ -320,8 +336,34 @@ str(data@itemInfo)
 
 cate.cat <- arules::aggregate(x = data, by = "cate")
 
-rules.cat<-apriori(data = cate.cat,parameter = list(support = 0.01, confidence = 0.5))
+categorias<-levels(data@itemInfo$cate)
 
+rhscate<-categorias[categorias %ni% c("Desktops", "Laptops")]
+
+rhscate
+
+rules.rhs<-apriori(data = cate.cat, appearance = list(rhs=rhscate), parameter = list(support = 0.01, confidence = 0.1, minlen=2))
+inspect(head(sort(rules.rhs, by="confidence"),15))
+plot(rules.rhs, method = "grouped", control = list(k=10)) # muy util para ver los main products Desktop 
+
+plot(sort(rules.rhs, by="confidence")[1:10], method = "graph", engine="interactive") #### interactivo para ver lift y support#
+
+
+levels(data@itemInfo$cate)
+
+
+rules.cat<-apriori(data = cate.cat,
+               #appearance = list(lhs= "Desktops"),
+               parameter = list(support = 0.01, confidence = 0.5, minlen =2))
+inspect(head(sort(rules.cat, by="confidence"),15))
+
+
+#plot por category#
+data %>%
+  aggregate("cate") %>%
+  itemFrequencyPlot(topN= 17)
+
+itemFrequencyPlot(x = rules.cat, topN = 15)
 
 inspect(head(sort(rules.cat, by="confidence"),15))
 
@@ -334,30 +376,45 @@ plot(rules.cat, method = "matrix", measure = c("lift","confidence")) #no util#
 plot(sort(x = rules.cat, by="confidence")[1:5],method="graph") #por mejorar plot para que sea util#
 
 
+rules.lap<-apriori(data = cate.cat,
+               appearance = list(lhs= "Desktops"),
+               parameter = list(support = 0.01, confidence = 0.1, minlen=2))
 
-#### LABEL KIND - POR TRABAJAR####
-#Dividido en 2 categorias MAIN-productos principales Desktops y labels por lo visto en el anterior paso COMPLE- productos complementarios (posible utilizacion para segmentacion de clientes)
+
+inspect(head(sort(rules.lap, by="confidence"),15))
 
 
-#pendiente de añadir alienware# o agrupar por tipo de label
+plot(rules.cat, method = "grouped", control = list(k=10))
 
-#main<-c("LG Touchscreen Laptop","Acer Aspire","HP Laptop","ASUS Chromebook","Apple Macbook Pro","Apple MacBook Air","Dell Laptop",
-#        "Eluktronics Pro Gaming Laptop","Alienware AW17R4-7345SLV-PUS 17" Laptop",
-#"HP Notebook Touchscreen Laptop PC"
-"Lenovo Desktop Computer"
-"iMac"
-"HP Desktop"
-"ASUS Desktop"
-"Dell Desktop"
-"Intel Desktop"
-"Acer Desktop"
-"CYBERPOWER Gamer Desktop"
-"Dell 2 Desktop"
-"iPad"
-"iPad Pro"
-"Fire HD Tablet"
-"Samsung Galaxy Tab"
-"Kindle"
+
+####Blackwell###
+
+black = read.csv("existingProductAttributes.csv")
+
+black <- within(black, 
+                Product.Type <- factor(Product.Type, 
+                                       levels=names(sort(table(Product.Type), 
+                                                         decreasing=TRUE))))
+
+p<-ggplot(data=black, aes(x=Product.Type)) +
+  geom_bar()
+
+p
+
+####CONCLUSIONES####
+
+#si  por productos que no vendemos para obtener mas clientes, Apple o Deskstops y Laptops, incremento de ventas de nuestros accesorios
+
+#vender Laptops y Desktops incrementa la venta de accesorios en general.
+
+
+#Blackwell, futuro predicho mas volumen en tablets y game console, actual accesorios y printer, pocos printers supplies
+
+#que rules de printers que productos se compraran
+
+
+# desglosar accesorios
+#quien gana mas?? profit margin pc..
 
 
 ####~~~notas~~~####
@@ -367,6 +424,6 @@ plot(sort(x = rules.cat, by="confidence")[1:5],method="graph") #por mejorar plot
 ##support , amount of times 2 items are together depends of the datasize
 
 #confidence  
-#lift how is related
+#lift how is related, aumenta la probabilidad de compra el derecho
 
 #check with ranges support and confidence
