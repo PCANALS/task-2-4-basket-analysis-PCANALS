@@ -403,6 +403,10 @@ p
 
 ####CONCLUSIONES####
 
+#Aumento de portfolio
+#Aumento de clientes por mes
+#Productos diferentes a los más vendidos en Blackwell
+
 #si  por productos que no vendemos para obtener mas clientes, Apple o Deskstops y Laptops, incremento de ventas de nuestros accesorios
 
 #vender Laptops y Desktops incrementa la venta de accesorios en general.
@@ -413,8 +417,12 @@ p
 #que rules de printers que productos se compraran
 
 
-# desglosar accesorios
-#quien gana mas?? profit margin pc..
+#quien gana mas?? profit margin pc.. ¿a electro le interesa venderse?
+#9800 clientes por mes
+
+# Suggestions##
+#desglosar accesorios
+
 
 
 ####~~~notas~~~####
