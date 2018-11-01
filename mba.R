@@ -41,11 +41,11 @@ hist((size(data))) #histo frecuencia del numero de productos por transaccion#
 max(size(data))
 mean
 
-dataHigh<-data[size(data)<=10& size(data)>0]
+dataHigh<-data[size(data)<=5& size(data)>0]
 
 hist(size(dataHigh))
 
-dataLow<-data[size(data)>10]
+dataLow<-data[size(data)>5]
 hist(size(dataLow))
 
 #### LOOKING DATASET ####
@@ -65,9 +65,9 @@ inspect(head(sort(rules, by="lift"),5))
 plot(rules, method = "graph")
 summary(rules)
 
-image(sample(dat, 2000)) #probado de 100 a 2000 y no se ve un patron#
+image(sample(data, 2000)) #probado de 100 a 2000 y no se ve un patron#
 
-itemFrequencyPlot(dat, topN=10) #hay que indicarle un top o no puede plotear#
+itemFrequencyPlot(data, topN=10) #hay que indicarle un top o no puede plotear#
 
 #### Associations with APRIORI####
 
@@ -103,6 +103,7 @@ bas <- as(data, "transactions");
 rules <- apriori(bas, parameter=list(support=0.01, confidence=0.5));
 
 rules
+
 #sel = plot(rules, measure=c("support","lift"), shading="confidence", interactive=TRUE);
 
 subrules = rules[quality(rules)$confidence > 0.8];
@@ -168,6 +169,7 @@ data@itemInfo$brand[grep(pattern = "^Alienware", x = data@itemInfo$brand)] <- "A
 data@itemInfo$brand[data@itemInfo$brand %ni% c("Apple", "LG", "Acer", "HP", "Asus", "Dell", "Lenovo", "Cyberpower",
                                                "Samsung", "Logitech", "Microsoft", "Rii", "Alienware")] <- "Others"
 
+
 data@itemInfo$brand <- as.factor(data@itemInfo$brand)
 
 class(data)
@@ -181,7 +183,7 @@ rules<-apriori(data = brand.cat,
                 parameter = list(support = 0.01, confidence = 0.5, minlen =2))
 inspect(head(sort(rules, by="confidence"),15))
 
-plot(sort(rules, by="confidence")[1:10], method = "graph", engine="interactive") #### interactivo para ver lift y support#
+plot(sort(rules, by="confidence")[1:5], method = "graph", engine="interactive") #### interactivo para ver lift y support#
 
 
 ###ok###
@@ -191,7 +193,7 @@ plot(rules, method = "matrix", measure = c("lift","confidence"))
 
 
 ###ok###
-plot(sort(x = rules, by="confidence")[1:10],method="graph")
+plot(sort(x = rules, by="confidence")[1:5],method="graph", engine = "interactive")
 
 #### LABEL CATEGORIES####
 
@@ -346,7 +348,7 @@ rules.rhs<-apriori(data = cate.cat, appearance = list(rhs=rhscate), parameter = 
 inspect(head(sort(rules.rhs, by="confidence"),15))
 plot(rules.rhs, method = "grouped", control = list(k=10)) # muy util para ver los main products Desktop 
 
-plot(sort(rules.rhs, by="confidence")[1:10], method = "graph", engine="interactive") #### interactivo para ver lift y support#
+plot(sort(rules.rhs, by="confidence")[1:10], method = "graph") #### interactivo para ver lift y support#
 
 
 levels(data@itemInfo$cate)
@@ -361,9 +363,9 @@ inspect(head(sort(rules.cat, by="confidence"),15))
 #plot por category#
 data %>%
   aggregate("cate") %>%
-  itemFrequencyPlot(topN= 17)
+  itemFrequencyPlot(topN= 17, main = "Electronidex product purchase frequency")
 
-itemFrequencyPlot(x = rules.cat, topN = 15)
+
 
 inspect(head(sort(rules.cat, by="confidence"),15))
 
@@ -396,8 +398,8 @@ black <- within(black,
                                        levels=names(sort(table(Product.Type), 
                                                          decreasing=TRUE))))
 
-p<-ggplot(data=black, aes(x=Product.Type)) +
-  geom_bar()
+p<-ggplot(data=black, aes(x=Product.Type), ) +
+  geom_bar( color = "black", fill="lightblue") + ggtitle ( "Blackwell Product Types")+theme_classic()
 
 p
 
@@ -405,7 +407,7 @@ p
 
 #Aumento de portfolio
 #Aumento de clientes por mes
-#Productos diferentes a los más vendidos en Blackwell
+#Productos diferentes a los más vendidos en Blackwell. 
 
 #si  por productos que no vendemos para obtener mas clientes, Apple o Deskstops y Laptops, incremento de ventas de nuestros accesorios
 
@@ -421,6 +423,8 @@ p
 #9800 clientes por mes
 
 # Suggestions##
+#consultar con Electronidex lo si tienen 2 canales de venta y solicitarles los datos para poder indentificarlos clientes o 
+#para poder mejorar e identificar mejor los productos a incorporar a Blackwell
 #desglosar accesorios
 
 
