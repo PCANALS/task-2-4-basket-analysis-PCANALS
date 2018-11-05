@@ -1,0 +1,361 @@
+---
+title: "Market Basket Analysis for Electrodinex"
+author: "Pilar Canals & David Gibert"
+date: "October 31, 2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+```{r include=FALSE}
+rm(list = ls())
+```
+
+```{r include=FALSE}
+library(arules)
+library(arulesViz)
+library(dplyr)
+library(ggplot2)
+
+"%ni%" = Negate("%in%")
+
+data = read.transactions("C:/Users/David/Google Drive/Ubiqum/5_MBA/transactions.csv",
+                  format = "basket",
+                  sep = ",",
+                  rm.duplicates = T,
+                  encoding = "unknown")
+
+black = read.csv("C:/Users/David/Google Drive/Ubiqum/1_Blackwell/Regression Project/Data/existingProductAttributes.csv")
+
+# setwd("C:/Users/pilar/Documents/Ubiqum/TASK2.4/task-2-4-basket-analysis-PCANALS")
+# data = read.transactions("transactions.csv",
+#                          format = "basket",
+#                          sep = ",",
+#                          rm.duplicates = T,
+#                          encoding = "unknown")
+# black<- read.csv("existingProductAttributes.csv")
+
+dataHigh <- data[size(data) <= 5 & size(data) > 0]
+dataLow<-data[size(data)>5]
+```
+
+```{r include=FALSE}
+###########################################################################################
+######################## CREACION DE BRAND DENTRO DE ITEMINFO ########################
+###########################################################################################
+
+data@itemInfo$brand = data@itemInfo$labels
+
+data@itemInfo$brand[grep(pattern = "^i[A-Z]", x = data@itemInfo$brand)] <- "Apple"
+data@itemInfo$brand[grep(pattern = "^Apple", x = data@itemInfo$brand)] <- "Apple"
+data@itemInfo$brand[grep(pattern = "^LG", x = data@itemInfo$brand)] <- "LG"
+data@itemInfo$brand[grep(pattern = "^Acer", x = data@itemInfo$brand)] <- "Acer"
+data@itemInfo$brand[grep(pattern = "^HP", x = data@itemInfo$brand)] <- "HP"
+data@itemInfo$brand[grep(pattern = "^ASUS", x = data@itemInfo$brand)] <- "Asus"
+data@itemInfo$brand[grep(pattern = "^Dell", x = data@itemInfo$brand)] <- "Dell"
+data@itemInfo$brand[grep(pattern = "^Lenovo", x = data@itemInfo$brand)] <- "Lenovo"
+data@itemInfo$brand[grep(pattern = "^CYBERPOWER", x = data@itemInfo$brand)] <- "Cyberpower"
+data@itemInfo$brand[grep(pattern = "^Samsung", x = data@itemInfo$brand)] <- "Samsung"
+data@itemInfo$brand[grep(pattern = "^Logit", x = data@itemInfo$brand)] <- "Logitech"
+data@itemInfo$brand[grep(pattern = "^Microsoft", x = data@itemInfo$brand)] <- "Microsoft"
+data@itemInfo$brand[grep(pattern = "^Rii", x = data@itemInfo$brand)] <- "Rii"
+data@itemInfo$brand[grep(pattern = "^Alienware", x = data@itemInfo$brand)] <- "Alienware"
+
+data@itemInfo$brand[data@itemInfo$brand %ni% c("Apple", "LG", "Acer", "HP", "Asus", "Dell", "Lenovo", "Cyberpower",
+                                               "Samsung", "Logitech", "Microsoft", "Rii", "Alienware")] <- "Others"
+
+data@itemInfo$brand <- as.factor(data@itemInfo$brand)
+```
+
+```{r include=FALSE}
+###########################################################################################
+########################### CREACION DE CATE DENTRO DE ITEMINFO ###########################
+###########################################################################################
+
+data@itemInfo$cate = data@itemInfo$labels
+
+#Laptops# añadiendo las diferentes palabras clave
+
+data@itemInfo$cate[grep(pattern = "Laptop|MacBook|Aspire|Chromebook", x = data@itemInfo$cate)] <- "Laptops" 
+
+#Desktop# # utilizando un vector por la palabra Desktop en diferentes categorias#
+
+desks<-c("Lenovo Desktop Computer","HP Desktop","iMac","ASUS Desktop","Dell Desktop",
+"Intel Desktop","Acer Desktop","CYBERPOWER Gamer Desktop","Dell 2 Desktop")
+
+
+data@itemInfo$cate[grep(paste(pattern = desks, collapse="|"), x = data@itemInfo$cate)] <- "Desktops"
+
+#Monitors# Todos los monitors finalizan en $
+
+data@itemInfo$cate[grep(pattern = "Monitor$", x = data@itemInfo$cate)] <- "Monitors"
+
+#Computer Mice# vector por la diversidad 
+
+mouse<- c("3-Button Mouse","Logitech Wireless Mouse","Microsoft Basic Optical Mouse",
+"Logitech 3-button Mouse","Redragon Gaming Mouse","HP Wireless Mouse","Generic Black 3-Button",
+"Wireless Portable Mouse","Gaming Mouse Professional","Slim Wireless Mouse")
+
+data@itemInfo$cate[grep(paste(pattern = mouse, collapse="|"), x = data@itemInfo$cate)] <- "Computer Mice"
+
+#Keyboard# acabado en Keyboard$
+
+data@itemInfo$cate[grep(pattern = "Keyboard$", x = data@itemInfo$cate)] <- "Keyboard"
+
+#Mouse and Keyboard Combo#
+data@itemInfo$cate[grep(pattern = "Combo", x = data@itemInfo$cate)] <- "Mouse and Keyboard Combo"
+data@itemInfo$cate[grep(pattern = "Keyboard and Mouse", x = data@itemInfo$cate)] <- "Mouse and Keyboard Combo"
+data@itemInfo$cate[grep(pattern = "Keyboard & Mouse", x = data@itemInfo$cate)] <- "Mouse and Keyboard Combo"
+
+#Computer Headphones# #mezcla de generico y especifico por no tener key words#
+
+data@itemInfo$cate[grep(pattern = "Headset", x = data@itemInfo$cate)] <- "Computer Headphones"
+data@itemInfo$cate[grep(pattern = "On-Ear", x = data@itemInfo$cate)] <- "Computer Headphones"
+data@itemInfo$cate[grep(pattern = "Ailihen", x = data@itemInfo$cate)] <-"Computer Headphones"
+data@itemInfo$cate[grep(pattern = "Koss", x = data@itemInfo$cate)] <- "Computer Headphones"
+data@itemInfo$cate[grep(pattern = "Kensington Headphones", x = data@itemInfo$cate)] <- "Computer Headphones"
+
+#Active Headphones# #especifico por no existir key words#
+
+data@itemInfo$cate[grep(pattern = "Earpods", x = data@itemInfo$cate)] <- "Active Headphones"
+data@itemInfo$cate[grep(pattern = "Bluetooth Headphone", x = data@itemInfo$cate)] <- "Active Headphones"
+data@itemInfo$cate[grep(pattern = "Beats", x = data@itemInfo$cate)] <- "Active Headphones"
+data@itemInfo$cate[grep(pattern = "In-Ear", x = data@itemInfo$cate)] <- "Active Headphones"
+data@itemInfo$cate[grep(pattern = "Earhook", x = data@itemInfo$cate)] <- "Active Headphones"
+
+#Computer Cords# #key word#
+
+data@itemInfo$cate[grep(pattern = "Cable", x = data@itemInfo$cate)] <- "Computer Cords"
+data@itemInfo$cate[grep(pattern = "HDMI", x = data@itemInfo$cate)] <- "Computer Cords"
+
+#Accessories#
+
+data@itemInfo$cate[grep(pattern = "Mouse Pad", x = data@itemInfo$cate)] <- "Accesories"
+data@itemInfo$cate[grep(pattern = "Computer Game", x = data@itemInfo$cate)] <- "Accesories"
+data@itemInfo$cate[grep(pattern = "Home and Student", x = data@itemInfo$cate)] <- "Accesories"
+
+#Speakers# Mezcla key word y especifico#
+
+data@itemInfo$cate[grep(pattern = "Speaker", x = data@itemInfo$cate)] <- "Speakers"
+data@itemInfo$cate[grep(pattern = "Sonos", x = data@itemInfo$cate)] <- "Speakers"
+data@itemInfo$cate[grep(pattern = "Acoustics", x = data@itemInfo$cate)] <- "Speakers"
+data@itemInfo$cate[grep(pattern = "DOSS Touch Wireless Bluetooth", x = data@itemInfo$cate)] <- "Speakers"
+
+#Printers # con vector para evitar confusion con Printer Ink#
+
+printers<- c("Epson Printer","HP Wireless Printer","Canon Office Printer",
+"Brother Printer","DYMO Label Manker")
+
+data@itemInfo$cate[grep(paste(pattern = printers, collapse="|"), x = data@itemInfo$cate)] <- "Printers"
+
+#Printer Ink# key words genericas#
+
+data@itemInfo$cate[grep(pattern = "Ink", x = data@itemInfo$cate)] <- "Printer Ink"
+data@itemInfo$cate[grep(pattern = "Toner", x = data@itemInfo$cate)] <- "Printer Ink"
+data@itemInfo$cate[grep(pattern = "Tape", x = data@itemInfo$cate)] <- "Printer Ink"
+
+#Computer Stands# key words genericas#
+
+data@itemInfo$cate[grep(pattern = "Stand", x = data@itemInfo$cate)] <- "Computer Stands"
+data@itemInfo$cate[grep(pattern = "Mount", x = data@itemInfo$cate)] <- "Computer Stands"
+
+#Computer Tablets# especifico por key words dentro de otras palabras
+
+data@itemInfo$cate[grep(pattern = "iPad", x = data@itemInfo$cate)] <- "Computer Tablets"
+data@itemInfo$cate[grep(pattern = "Kindle", x = data@itemInfo$cate)] <- "Computer Tablets"
+data@itemInfo$cate[grep(pattern = "Fire HD Tablet", x = data@itemInfo$cate)] <- "Computer Tablets"
+data@itemInfo$cate[grep(pattern = "Samsung Galaxy Tab", x = data@itemInfo$cate)] <- "Computer Tablets"
+
+#External Hardrives# mix
+
+data@itemInfo$cate[grep(pattern = "External", x = data@itemInfo$cate)] <- "External Hardrives"
+data@itemInfo$cate[grep(pattern = "5TB Desktop Hard Drive", x = data@itemInfo$cate)] <- "External Hardrives"
+
+#Smart Home Devices# mix
+
+data@itemInfo$cate[grep(pattern = "TV", x = data@itemInfo$cate)] <- "Smart Home Devices"
+data@itemInfo$cate[grep(pattern = "Google Home", x = data@itemInfo$cate)] <- "Smart Home Devices"
+data@itemInfo$cate[grep(pattern = "Smart Light Bulb", x = data@itemInfo$cate)] <- "Smart Home Devices"
+data@itemInfo$cate[grep(pattern = "Roku Express", x = data@itemInfo$cate)] <- "Smart Home Devices"
+
+data@itemInfo$cate <- as.factor(data@itemInfo$cate)
+```
+
+# **Introduction**
+The objective of this report is to find reasons among relations between order transactions to justify the decision on purchasing Electronidex company. The transactional data belongs to 1 month period of Electronidex's sells.
+
+# **Summary**
+After doing the analysis we advice that it would be interesting to purchase the company in order to add products like Desktops and Laptops to the portfolio.
+
+We could expect to gain new customers from the Electronidex aquired products aswell.
+
+***Even so, it would be important to keep in mind that the time period of sales of Electronidex's transactions covers only one month, which means that it could be different from another one. This is because it would not be the same selling products on June than on December. It would be interesting then to have the sales data for the same period of time for both companies, as well as the transactional data of Blackwell.***
+
+# **Conclusions by product**
+Let's look at some histograms that show the frequency of purchases for each category for both, Electrodinex and Blackwell.
+
+```{r echo=FALSE}
+itemFrequencyPlot(data,
+                  topN = 10, #Hay que indicarle un top o no puede plotear#
+                  type = "absolute",
+                  names = T,
+                  ylab = "Volume",
+                  main = "Top 10 Products Electronidex",
+                  col = "light blue"
+                  )
+```
+
+As we can see, Electronidex sells many different products. Products belong to brands like Apple or HP and to categories like Desktops or Monitors. Studying the products using those conditions could bring more insights aswell.
+
+**In the following histograms, we can observe the different categories of products for each company.**
+```{r echo=FALSE}
+black <- within(black,
+                Product.Type <- factor(Product.Type,
+                                       levels=names(sort(table(Product.Type),
+                                                         decreasing=TRUE))))
+
+p <- ggplot(data=black, aes(x=Product.Type)) +
+  geom_bar(color = "black", fill="lightblue") +
+  ggtitle("Blackwell products by category") +
+  xlab("") +
+  ylab("Amoutn of products") +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle=20))
+
+p
+```
+
+```{r echo=FALSE}
+data %>%
+aggregate("cate") %>%
+itemFrequencyPlot(topN = 17,
+                  type = "absolute",
+                  names = T,
+                  ylab = "Volume",
+                  xlab = "",
+                  main = "Electronidex products by category",
+                  col = "light blue"
+                  )
+```
+
+If we had the transactional data of both companies, we could confirm, as we observe in the histograms, that we should acquire Desktops and Laptops to increase the Blackwell catalog. This way, it would increase the volume of clients and company profit, since we know that Desktops and Laptops are the ones that have the greatest profitability at Blackwell.
+
+# **Analysing relations among products**
+```{r include=FALSE}
+##########################
+### Generico Producto ###
+##########################
+rules.generic = apriori(data = data, parameter = list(support = 0.01, confidence = 0.5, minlen = 2))
+```
+```{r echo=FALSE}
+inspect(head(sort(rules.generic, by="confidence"),6))
+```
+
+The relationships among products is very low when the entire portfolio is analyzed globally. Apparently, this indicates that the products are not related to each other. In addition, the fact that in the same transaction there are products of the same category, for example Desktop, could indicate that the type of customer is Whole Sale apart from Retail.
+
+In the following histogram we could guess that there are the two types of clients mentioned above. We reached that conclusion because the number of products per transaction varies between 1 and 30, so that transactions with a smaller number of products could be from the retail sector.
+```{r echo=FALSE}
+hist(size(data),
+     main = "Frequency of transactions",
+     xlab = "Quantity of products by transaction",
+     ylab = "Amount",
+     col = "light blue"
+       )
+```
+
+As we have seen, that iMac and HP Laptop are the best selling products, we will study the direct relationships with the other products.
+```{r include=FALSE}
+products<-c(data@itemInfo$labels)
+
+rhsproducts<-products[products %ni% c("iMac", "HP Laptop")]
+
+rules.product <- apriori(data = data,
+                         appearance = list(rhs=rhsproducts),
+                         parameter = list(support = 0.01,
+                                          confidence = 0.1,
+                                          minlen=2)
+)
+```
+```{r echo=FALSE}
+inspect(head(sort(rules.product, by="confidence"),5))
+```
+
+We can conclude that the products with more sales, "iMac" and "HP Laptop", are not related to the rest of products due to the low values on support and confidence.
+
+# **Conclusions by brand**
+
+We have identified the brands with more products and the rest has been grouped with the name "Others".
+```{r include=FALSE}
+###########################
+### GENERICO PARA BRAND ###
+###########################
+brand.cat <- arules::aggregate(x = data, by = "brand")
+
+rules.brand <- apriori(data = brand.cat,
+                       parameter = list(support = 0.01, confidence = 0.5, minlen =2))
+```
+```{r echo=FALSE}
+inspect(head(sort(rules.brand, by="confidence"),6))
+```
+
+As we can see, the strongest rule among categories is directly related with the category "Others", composed mainly by accessories.
+
+![](C:/Users/David/Google Drive/Ubiqum/genericoBrandShitApple.PNG)
+
+Also we can see that Apple has no many relations with brand "Others"  even if it is the most sold category of products.
+
+# **Insights about Apple**
+```{r include=FALSE}
+###########################
+### GENERICO PARA APPLE ###
+###########################
+brand.cat <- arules::aggregate(x = data, by = "brand")
+
+rules.apple <- apriori(data = brand.cat,
+                       appearance = list(lhs= "Apple"),
+                       parameter = list(support = 0.01, confidence = 0.3, minlen =2))
+```
+```{r echo=FALSE}
+inspect(head(sort(rules.apple, by="confidence"),15))
+```
+
+We can confirm that Apple does not have many relations with any other brands. It only has relation with the category "Others".
+
+# **Conclusions by category**
+```{r include=FALSE}
+cate.cat <- arules::aggregate(x = data, by = "cate")
+
+categorias <- levels(data@itemInfo$cate)
+
+rules.cat<-apriori(data = cate.cat,
+                   parameter = list(support = 0.01, confidence = 0.8, minlen =2))
+```
+```{r echo=FALSE}
+inspect(head(sort(rules.cat, by="confidence"),6))
+```
+As we can see, the strongest rules are related with Desktop and Laptops products.
+
+# **Relations with the strongest product categories**
+```{r include=FALSE}
+#agregate#
+rhscate <- categorias[categorias %ni% c("Desktops", "Laptops")]
+
+rules.rhs <- apriori(data = cate.cat, appearance = list(rhs=rhscate), parameter = list(support = 0.01, confidence = 0.1, minlen=2))
+```
+```{r echo=FALSE}
+inspect(head(sort(rules.rhs, by="confidence"),6))
+```
+
+![](C:/Users/David/Google Drive/Ubiqum/estrellaMar.PNG)
+
+We can see that Electronidex sells many accessories when it sells different Desktops or Laptops, which led us to think that this is very interesting for Blackwell in case of buying Electronidex. It can increase the sales of its own accessories as well as attract the customers of the new acquired products.
+
+# **Suggestions**
+
+* Detailed analysis with transactional data from both companies for the same period of time. We should have more historical data, not only monthly since the sales may change depending on the month they were registered.
+
+* Break down the "Accessory" category from Blackwell data in order to cross it with future transactional data and confirm the hypothesis that when buying Desktops or Laptops, Acessories are bought aswell.
+
+* Go deeper into the analysis of Electronidex's data by splitting it into subgroups of clients (eg. Whole Sale and Retail).
+
+* Analyze the data by removing Apple brand products since the greatest relationship they have is with themselves.
